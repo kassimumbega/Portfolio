@@ -1653,6 +1653,7 @@ body.ready .hero-eyebrow{opacity:1}
       <div class="form-actions">
         <button type="submit" class="form-submit" data-send="whatsapp">Send on WhatsApp</button>
         <button type="button" class="form-submit form-submit-alt" data-send="email">Send by email</button>
+        <input type="hidden" name="access_key" value="57bea7a5-f503-419d-8590-fabfc9584773">
       </div>
       <p class="form-note">
         Or reach out directly —
@@ -2031,16 +2032,48 @@ track.parentElement.appendChild(track.cloneNode(true));
     s.scrollIntoView({behavior:'smooth',block:'center'});
   }
 
+  function showError(msg){
+    alert(msg||'Something went wrong sending your enquiry. Please try WhatsApp or email us directly.');
+  }
+
+  async function sendEmail(){
+    const emailBtn=document.querySelector('[data-send="email"]');
+    emailBtn.disabled=true;
+    emailBtn.textContent='Sending…';
+    try{
+      const res=await fetch('https://api.web3forms.com/submit',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Accept:'application/json'},
+        body:JSON.stringify({
+          access_key:form.access_key.value,
+          subject:'New project enquiry — '+(val('fullName')||'website'),
+          name:val('fullName'),
+          email:val('email'),
+          message:summary()
+        })
+      });
+      const data=await res.json();
+      if(data.success){
+        showSuccess();
+      } else {
+        showError(data.message);
+      }
+    } catch(err){
+      showError();
+    } finally {
+      emailBtn.disabled=false;
+      emailBtn.textContent='Send by email';
+    }
+  }
+
   function send(mode){
     if(!form.reportValidity()) return;
     if(mode==='email'){
-      const subject='New project enquiry — '+(val('fullName')||'website');
-      window.location.href='mailto:aymanthebees@gmail.com?subject='+
-        encodeURIComponent(subject)+'&body='+encodeURIComponent(summary());
-    } else {
-      window.open('https://wa.me/255753740755?text='+
-        encodeURIComponent('*NEW PROJECT ENQUIRY*\n\n'+summary()),'_blank');
+      sendEmail();
+      return;
     }
+    window.open('https://wa.me/255753740755?text='+
+      encodeURIComponent('*NEW PROJECT ENQUIRY*\n\n'+summary()),'_blank');
     setTimeout(showSuccess,400);
   }
 
